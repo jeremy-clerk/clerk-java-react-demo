@@ -72,8 +72,9 @@ function Dashboard() {
 
   function getCurlCommand(jwt: string) {
     const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080'
-    return `curl -X GET "${apiUrl}/api/protected/user" \\
-  -H "Authorization: Bearer ${jwt}"`
+    return `curl -X POST "${apiUrl}/api/public/verify-token" \\
+  -H "Content-Type: application/json" \\
+  -d '{"token": "${jwt}"}'`
   }
 
   async function copyToClipboard(text: string) {

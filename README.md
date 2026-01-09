@@ -107,6 +107,7 @@ VITE_API_URL=http://localhost:8080
 |----------|---------------|-------------|
 | `GET /api/health` | No | Health check |
 | `GET /api/public/info` | No | Public information |
+| `POST /api/public/verify-token` | No | Verify a Clerk token and return its payload |
 | `GET /api/protected/user` | Yes | Get authenticated user info |
 | `GET /api/protected/data` | Yes | Get protected data |
 | `POST /api/protected/generate-long-lived-token` | Yes | Generate a session token with 1-month expiration |
@@ -133,12 +134,32 @@ VITE_API_URL=http://localhost:8080
 The Dashboard includes a feature to generate session tokens with extended expiration (30 days). This uses the Clerk Backend API's `sessions.createToken()` method with a custom `expiresInSeconds` parameter.
 
 ```bash
-# Example: Test the generated token with curl
-curl -X GET "http://localhost:8080/api/protected/user" \
-  -H "Authorization: Bearer <your-generated-jwt>"
+# Example: Verify the generated token with curl
+curl -X POST "http://localhost:8080/api/public/verify-token" \
+  -H "Content-Type: application/json" \
+  -d '{"token": "<your-generated-jwt>"}'
 ```
 
 The Dashboard UI provides a copy button to easily test the generated token.
+
+### Token Verification Endpoint
+
+The `/api/public/verify-token` endpoint uses the Clerk SDK's `VerifyToken` helper to validate tokens without requiring authentication. It auto-detects the token type (JWT session, API key, machine token, or OAuth token) and returns the decoded payload.
+
+**Request:**
+```json
+{ "token": "<clerk-token>" }
+```
+
+**Success Response:**
+```json
+{ "verified": true, "payload": { ... } }
+```
+
+**Error Response:**
+```json
+{ "verified": false, "error": "<error-message>" }
+```
 
 ## Building the Clerk SDK Locally (Optional)
 
@@ -164,6 +185,7 @@ After building, the backend will automatically use the local version.
 
 - **`ClerkAuthFilter.java`** - JWT validation filter using Clerk SDK
 - **`CorsConfig.java`** - CORS configuration for frontend communication
+- **`PublicController.java`** - Public endpoints including token verification
 - **`ProtectedController.java`** - Example protected endpoints
 
 ### Frontend
