@@ -14,12 +14,23 @@ interface ProtectedData {
   items: string[]
 }
 
+interface TokenResponse {
+  jwt: string
+  userId: string
+  sessionId: string
+  expiresInSeconds: number
+}
+
 function Dashboard() {
   const { user } = useUser()
   const [userData, setUserData] = useState<UserData | null>(null)
   const [protectedData, setProtectedData] = useState<ProtectedData | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [tokenData, setTokenData] = useState<TokenResponse | null>(null)
+  const [tokenLoading, setTokenLoading] = useState(false)
+  const [tokenError, setTokenError] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
 
   useEffect(() => {
     async function fetchProtectedData() {
@@ -40,6 +51,36 @@ function Dashboard() {
 
     fetchProtectedData()
   }, [])
+
+  async function generateLongLivedToken() {
+    setTokenLoading(true)
+    setTokenError(null)
+    setCopied(false)
+    try {
+      const response = await apiClient.post('/api/protected/generate-long-lived-token')
+      if (response.data.error) {
+        setTokenError(response.data.error)
+      } else {
+        setTokenData(response.data)
+      }
+    } catch (err) {
+      setTokenError(err instanceof Error ? err.message : 'Failed to generate token')
+    } finally {
+      setTokenLoading(false)
+    }
+  }
+
+  function getCurlCommand(jwt: string) {
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080'
+    return `curl -X GET "${apiUrl}/api/protected/user" \\
+  -H "Authorization: Bearer ${jwt}"`
+  }
+
+  async function copyToClipboard(text: string) {
+    await navigator.clipboard.writeText(text)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
 
   if (loading) {
     return (
@@ -93,6 +134,56 @@ function Dashboard() {
               2
             )}
           </pre>
+        </div>
+
+        <div className="card">
+          <h2>Long-Lived Token</h2>
+          <p className="hint">Generate a token that expires in 1 month</p>
+          <button
+            onClick={generateLongLivedToken}
+            disabled={tokenLoading}
+            style={{
+              padding: '10px 20px',
+              marginTop: '10px',
+              cursor: tokenLoading ? 'not-allowed' : 'pointer',
+            }}
+          >
+            {tokenLoading ? 'Generating...' : 'Generate Token'}
+          </button>
+          {tokenError && (
+            <p style={{ color: 'red', marginTop: '10px' }}>{tokenError}</p>
+          )}
+          {tokenData && (
+            <>
+              <pre style={{ marginTop: '10px', wordBreak: 'break-all', whiteSpace: 'pre-wrap' }}>
+                {JSON.stringify(tokenData, null, 2)}
+              </pre>
+              <div style={{ marginTop: '20px' }}>
+                <h3 style={{ marginBottom: '10px' }}>Test with curl:</h3>
+                <pre style={{
+                  background: '#1a1a2e',
+                  color: '#eee',
+                  padding: '15px',
+                  borderRadius: '8px',
+                  whiteSpace: 'pre-wrap',
+                  wordBreak: 'break-all',
+                  fontSize: '13px',
+                }}>
+                  {getCurlCommand(tokenData.jwt)}
+                </pre>
+                <button
+                  onClick={() => copyToClipboard(getCurlCommand(tokenData.jwt))}
+                  style={{
+                    marginTop: '10px',
+                    padding: '8px 16px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {copied ? 'Copied!' : 'Copy curl command'}
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>
