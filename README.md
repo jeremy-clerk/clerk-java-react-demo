@@ -109,6 +109,7 @@ VITE_API_URL=http://localhost:8080
 | `GET /api/public/info` | No | Public information |
 | `GET /api/protected/user` | Yes | Get authenticated user info |
 | `GET /api/protected/data` | Yes | Get protected data |
+| `POST /api/protected/generate-long-lived-token` | Yes | Generate a session token with 1-month expiration |
 
 ## How It Works
 
@@ -126,6 +127,18 @@ VITE_API_URL=http://localhost:8080
 2. Axios interceptor calls `window.Clerk.session.getToken()` for each request
 3. Token is automatically added to `Authorization` header
 4. Protected routes use `SignedIn`/`SignedOut` for conditional rendering
+
+### Long-Lived Session Tokens
+
+The Dashboard includes a feature to generate session tokens with extended expiration (30 days). This uses the Clerk Backend API's `sessions.createToken()` method with a custom `expiresInSeconds` parameter.
+
+```bash
+# Example: Test the generated token with curl
+curl -X GET "http://localhost:8080/api/protected/user" \
+  -H "Authorization: Bearer <your-generated-jwt>"
+```
+
+The Dashboard UI provides a copy button to easily test the generated token.
 
 ## Building the Clerk SDK Locally (Optional)
 
@@ -168,7 +181,7 @@ After building, the backend will automatically use the local version.
 <dependency>
     <groupId>com.clerk</groupId>
     <artifactId>backend-api</artifactId>
-    <version>4.1.1</version>
+    <version>4.1.2</version>
 </dependency>
 
 <dependency>
