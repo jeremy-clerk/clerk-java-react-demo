@@ -12,7 +12,6 @@ apiClient.interceptors.request.use(async (config) => {
     const token = await clerk.session.getToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
-      console.log(token);
     }
   }
   return config;
